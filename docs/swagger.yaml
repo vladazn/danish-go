@@ -1,0 +1,360 @@
+definitions:
+  model.Batch:
+    properties:
+      vocabs:
+        items:
+          $ref: '#/definitions/model.Vocab'
+        type: array
+    type: object
+  model.PartOfSpeech:
+    enum:
+    - unknown
+    - noun
+    - verb
+    - numeral
+    - adjective
+    - adverb
+    - pronoun
+    - preposition
+    - conjunction
+    - question
+    type: string
+    x-enum-varnames:
+    - PartOfSpeechUnknown
+    - PartOfSpeechNoun
+    - PartOfSpeechVerb
+    - PortOfSpeechNumeral
+    - PartOfSpeechAdjective
+    - PartOfSpeechAdverb
+    - PartOfSpeechPronoun
+    - PartOfSpeechPreposition
+    - PartOfSpeechConjunction
+    - PartOfSpeechQuestion
+  model.Vocab:
+    properties:
+      definition:
+        type: string
+      forms:
+        items:
+          $ref: '#/definitions/model.VocabForm'
+        type: array
+      id:
+        type: string
+      part_of_speech:
+        $ref: '#/definitions/model.PartOfSpeech'
+      pause_until:
+        type: string
+    type: object
+  model.VocabForm:
+    properties:
+      form:
+        type: string
+      id:
+        type: string
+      last_success:
+        type: string
+      level:
+        type: integer
+      success_in_row:
+        type: integer
+      value:
+        type: string
+    type: object
+  model.VocabSet:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      vocab_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  server.AddSetRequest:
+    properties:
+      name:
+        type: string
+      vocab_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  server.BatchResult:
+    properties:
+      with_mistake:
+        items:
+          $ref: '#/definitions/model.Vocab'
+        type: array
+      without_mistake:
+        items:
+          $ref: '#/definitions/model.Vocab'
+        type: array
+    type: object
+  server.UpdateSetRequest:
+    properties:
+      name:
+        type: string
+      vocab_ids:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /classroom/batch:
+    get:
+      description: Fetches a batch of 20 vocab entries from the user's learning pool
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Batch'
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Get a new batch of words from the pool
+      tags:
+      - pool
+    post:
+      consumes:
+      - application/json
+      description: Removes one or more vocab items from the user’s current pool
+      parameters:
+      - description: Vocab items to remove
+        in: body
+        name: vocab
+        required: true
+        schema:
+          $ref: '#/definitions/server.BatchResult'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Remove vocab from the learning pool
+      tags:
+      - pool
+  /classroom/sets:
+    get:
+      description: Fetches all vocab sets for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.VocabSet'
+            type: array
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Get list of vocab sets
+      tags:
+      - sets
+    post:
+      consumes:
+      - application/json
+      description: Creates a new vocab set for the authenticated user
+      parameters:
+      - description: Set information
+        in: body
+        name: set
+        required: true
+        schema:
+          $ref: '#/definitions/server.AddSetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.VocabSet'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Add a new vocab set
+      tags:
+      - sets
+  /classroom/sets/{setId}:
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing vocab set for the authenticated user
+      parameters:
+      - description: Set ID
+        in: path
+        name: setId
+        required: true
+        type: string
+      - description: Updated set information
+        in: body
+        name: set
+        required: true
+        schema:
+          $ref: '#/definitions/server.UpdateSetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: Set not found
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Update a vocab set
+      tags:
+      - sets
+  /classroom/sets/{setId}/batch:
+    get:
+      description: Fetches a batch of vocabulary items from a specific vocab set
+      parameters:
+      - description: Set ID
+        in: path
+        name: setId
+        required: true
+        type: string
+      - description: 'Limit number of items (default: all)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Batch'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: Set not found
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Get vocab batch from a specific set
+      tags:
+      - sets
+  /vocab:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Vocab'
+            type: array
+        "500":
+          description: Internal Server Error
+      summary: Get all vocab for user
+      tags:
+      - vocab
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vocabulary
+        in: body
+        name: vocab
+        required: true
+        schema:
+          $ref: '#/definitions/model.Vocab'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Vocab'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Add vocab
+      tags:
+      - vocab
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vocabulary
+        in: body
+        name: vocab
+        required: true
+        schema:
+          $ref: '#/definitions/model.Vocab'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Vocab'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update vocab
+      tags:
+      - vocab
+  /vocab/{id}:
+    delete:
+      parameters:
+      - description: Vocab ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Remove vocab
+      tags:
+      - vocab
+swagger: "2.0"
